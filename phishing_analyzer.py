@@ -1,14 +1,57 @@
 import requests
 import time
 import sys
+import whois
+from urllib.parse import urlparse
+from datetime import datetime
 
 API_KEY = "SENIN_API_ANAHTARIN_BURAYA_GELECEK"
 
+def alan_adi_cikar(url):
+    parsed = urlparse(url if "//" in url else f"http://{url}")
+    domain = parsed.netloc
+    if domain.startswith("www."):
+        domain = domain[4:]
+    return domain
+
+def whois_sorgula(domain):
+    print("\n[*] 1. AŞAMA: Alan Adı (WHOIS) İstihbaratı Toplanıyor...")
+    try:
+        w = whois.whois(domain)
+        kurulus_tarihi = w.creation_date
+        
+        if type(kurulus_tarihi) is list:
+            kurulus_tarihi = kurulus_tarihi[0]
+            
+        if kurulus_tarihi:
+            yas = (datetime.now() - kurulus_tarihi).days
+            print(f"[+] Domain: {domain}")
+            print(f"[+] Kuruluş Tarihi: {kurulus_tarihi.strftime('%Y-%m-%d')}")
+            
+            # Senaryoyu burada senin istediğin gibi yumuşattık
+            if yas < 30:
+                print(f"\n[!] DİKKAT: Bu site henüz sadece {yas} günlük!")
+                print("[!] Orijinal kurum adresi olmayabilir veya yepyeni bir site olabilir.")
+                print("[!] Güvenliğiniz için emin olmadan bu linke tıklamamanız tavsiye edilir.")
+            elif yas < 180:
+                print(f"\n[!] BİLGİ: Bu site {yas} günlük (6 aydan daha yeni). Dikkatli işlem yapın.")
+            else:
+                print(f"\n[+] BİLGİ: Bu site {yas} gündür aktif. (Uzun süredir kullanımda)")
+        else:
+            print("[-] WHOIS kaydında kuruluş tarihi bulunamadı (Gizlenmiş olabilir).")
+            
+    except Exception as e:
+        print("[-] WHOIS sorgusu yapılamadı veya geçersiz alan adı.")
+
 def linki_tara(url):
     print("\n" + "=" * 60)
-    print(f"[*] HEDEF LİNK ANALİZ EDİLİYOR: {url}")
+    print(f"[*] HEDEF ANALİZİ BAŞLATILDI: {url}")
     print("=" * 60)
 
+    domain = alan_adi_cikar(url)
+    whois_sorgula(domain)
+
+    print("\n[*] 2. AŞAMA: VirusTotal Derinlemesine Tarama Başlıyor...")
     tarama_url = "https://www.virustotal.com/api/v3/urls"
     headers = {"accept": "application/json", "x-apikey": API_KEY, "content-type": "application/x-www-form-urlencoded"}
     
